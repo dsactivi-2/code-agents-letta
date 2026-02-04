@@ -1,5 +1,6 @@
 import express from 'express';
 import { agentLoader } from '../services/agentLoader.js';
+import { orchestrator } from '../services/orchestrator.js';
 import { resumeSession } from '@letta-ai/letta-code-sdk';
 
 const router = express.Router();
@@ -19,10 +20,12 @@ router.post('/smart', async (req, res, next) => {
     // Auto-select agent or use provided one
     let agentId = userAgentId;
     let selectedAgent;
+    let selection;
 
     if (!agentId && autoSelect) {
-      selectedAgent = agentLoader.selectAgentForTask(message);
-      agentId = selectedAgent.agentId;
+      // Use Orchestrator (Wingman LLM-based selection)
+      selection = await orchestrator.selectAgent(message);
+      agentId = selection.selectedAgent;
       
       // Create agent instance if it doesn't exist
       let agentInstance = agentLoader.getAgentInstance(agentId);
@@ -30,6 +33,14 @@ router.post('/smart', async (req, res, next) => {
         agentInstance = await agentLoader.createAgentInstance(agentId);
       }
       agentId = agentInstance.agentId;
+      
+      selectedAgent = {
+        agentId: agentInstance.agentId,
+        profile: selection.profile,
+        confidence: selection.confidence,
+        reasoning: selection.reasoning,
+        alternatives: selection.alternatives
+      };
     }
 
     if (!agentId) {
@@ -60,7 +71,10 @@ router.post('/smart', async (req, res, next) => {
         name: agentInstance.profile.name,
         description: agentInstance.profile.description
       },
-      autoSelected: autoSelect && !userAgentId
+      autoSelected: autoSelect && !userAgentId,
+      confidence: selection?.confidence,
+      reasoning: selection?.reasoning,
+      fallback: selection?.fallback
     })}\n\n`);
 
     let session;

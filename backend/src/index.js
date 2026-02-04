@@ -9,6 +9,7 @@ import agentProfilesRoutes from './routes/agentProfiles.js';
 import smartChatRoutes from './routes/smartChat.js';
 import { initializeWebSocket } from './websocket/index.js';
 import { agentLoader } from './services/agentLoader.js';
+import { orchestrator } from './services/orchestrator.js';
 
 dotenv.config();
 
@@ -48,10 +49,23 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Initialize Orchestrator (Wingman for intelligent agent selection)
+async function initializeOrchestrator() {
+  try {
+    await orchestrator.initialize();
+    console.log('✅ Orchestrator (Wingman) ready for intelligent agent selection');
+  } catch (error) {
+    console.error('⚠️ Orchestrator initialization failed, falling back to keyword-based selection:', error.message);
+  }
+}
+
 // HTTP Server
-const httpServer = app.listen(PORT, () => {
+const httpServer = app.listen(PORT, async () => {
   console.log(`🚀 Letta Web Platform Backend running on http://localhost:${PORT}`);
   console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+  
+  // Initialize Orchestrator after server starts
+  await initializeOrchestrator();
 });
 
 // WebSocket Server

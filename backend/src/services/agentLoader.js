@@ -89,12 +89,12 @@ export class AgentLoader {
       // Create session with agent's configuration
       const session = await createSession(agentId, {
         systemPrompt: systemInstructions,
-        memory: lettaConfig.memoryBlocks || [],
-        allowedTools: lettaConfig.allowedTools || [],
-        model: options.model || modelPreferences.defaultModel,
-        temperature: options.temperature || modelPreferences.temperature,
-        cwd: lettaConfig.workingDirectory,
-        permissionMode: lettaConfig.permissionMode || 'default',
+        memory: lettaConfig?.memoryBlocks || [],
+        allowedTools: lettaConfig?.allowedTools || [],
+        model: options.model || modelPreferences?.defaultModel || 'claude-sonnet-4',
+        temperature: options.temperature || modelPreferences?.temperature || 0.7,
+        cwd: lettaConfig?.workingDirectory || './',
+        permissionMode: lettaConfig?.permissionMode || 'default',
         ...options
       });
 

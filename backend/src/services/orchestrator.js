@@ -1,4 +1,3 @@
-import { createAgent, sendMessage } from '@letta-ai/letta-code-sdk';
 import { agentLoader } from './agentLoader.js';
 
 /**
@@ -83,8 +82,28 @@ Remember:
 - If unclear/complex, use "meta-berater" (generalist)
 - Return ONLY the JSON, nothing else`;
 
-      // Send to Wingman
-      const response = await sendMessage(this.wingmanAgentId, this.wingmanSessionId, wingmanPrompt);
+      // Get Wingman session
+      const wingmanInstance = agentLoader.getAgentInstance(this.wingmanAgentId);
+      if (!wingmanInstance) {
+        throw new Error('Wingman agent instance not found');
+      }
+
+      // Get or create session
+      let session = wingmanInstance.sessions.find(s => s.sessionId === this.wingmanSessionId);
+      if (!session) {
+        session = await agentLoader.createAgentSession(this.wingmanAgentId);
+        this.wingmanSessionId = session.sessionId;
+      }
+
+      // Send to Wingman and collect response
+      await session.send(wingmanPrompt);
+      
+      let response = '';
+      for await (const msg of session.stream()) {
+        if (msg.type === 'assistant') {
+          response += msg.content;
+        }
+      }
 
       // Parse Wingman's response
       let selection;
